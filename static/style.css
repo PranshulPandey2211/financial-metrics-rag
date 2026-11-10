@@ -1,0 +1,38 @@
+:root {
+  --bg: #f1f5f9;
+  --card: #fff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --muted: #64748b;
+  --accent: #2563eb;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
+.site-header { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 1.5rem; }
+.brand { font-weight: 700; color: var(--text); text-decoration: none; font-size: 1.25rem; }
+.tagline { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.9rem; }
+.container { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
+.analyze-form .field { display: block; margin-bottom: 1rem; }
+.analyze-form input[type=text], .analyze-form input:not([type]) { width: 100%; max-width: 20rem; padding: 0.5rem; }
+fieldset { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 1rem; background: var(--card); }
+.theme-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.theme-chip { font-size: 0.85rem; background: #f8fafc; border: 1px solid var(--border); padding: 0.35rem 0.5rem; border-radius: 6px; }
+.btn-primary { background: var(--accent); color: #fff; border: none; padding: 0.65rem 1.25rem; border-radius: 8px; cursor: pointer; font-size: 1rem; }
+.insight-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; }
+.insight-card h4 { margin: 0 0 0.5rem; }
+.flash-list { list-style: none; padding: 0; }
+.flash { padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 0.5rem; }
+.flash-error { background: #fee2e2; color: #991b1b; }
+.sources pre { white-space: pre-wrap; font-size: 0.8rem; background: #f8fafc; padding: 0.5rem; border-radius: 4px; }
+main { max-width: 52rem; margin: 0 auto; padding: 1.25rem; }
+header { padding: 1rem 1.25rem; background: var(--card); border-bottom: 1px solid var(--border); }
+header a { color: var(--text); text-decoration: none; }
+.flash-error { color: #991b1b; background: #fee2e2; padding: 0.5rem 0.75rem; border-radius: 6px; }
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 0.75rem 1rem; margin: 0.75rem 0 1.25rem; }
+.metric-grid dt { font-size: 0.75rem; color: var(--muted); margin: 0; }
+.metric-grid dd { margin: 0.15rem 0 0; font-weight: 600; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; background: var(--card); margin-bottom: 1.5rem; }
+.data-table th, .data-table td { border: 1px solid var(--border); padding: 0.45rem 0.6rem; text-align: left; vertical-align: top; }
+.data-table th { background: #f8fafc; }
+.insight-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 0.75rem; }
+.insight-card h3 { margin: 0 0 0.5rem; font-size: 1rem; }

@@ -1,79 +1,188 @@
-min_length = 40
+MIN_WORDS = 40
 
-inc_stat = {
-    "revenue_health": f"Must be more than {min_length} words. Insight into the company's total revenue, providing a perspective on the health of the primary business activity.",
-    "operational_efficiency": f"Must be more than {min_length} words. Analysis of the company's operating expenses in relation to its revenue, offering a view into the firm's operational efficiency.",
-    "r_and_d_focus": f"Must be more than {min_length} words. Insight into the company's commitment to research and development, signifying its emphasis on innovation and future growth.",
-    "debt_management": f"Must be more than {min_length} words. Analysis of the company's interest expenses, highlighting the scale of its debt obligations and its approach to leveraging.",
-    "profit_retention": f"Must be more than {min_length} words. Insight into the company's net income, showcasing the amount retained post all expenses, which can be reinvested or distributed.",
+
+def _fund(text):
+    return f"Must be more than {MIN_WORDS} words. {text}"
+
+
+THEMES = {
+    "revenue_health": {
+        "label": "Revenue health",
+        "group": "income",
+        "source": "fundamentals",
+        "spec": _fund("Insight into total revenue and health of primary business activity."),
+    },
+    "operational_efficiency": {
+        "label": "Operational efficiency",
+        "group": "income",
+        "source": "fundamentals",
+        "spec": _fund("Operating expenses vs revenue and operational efficiency."),
+    },
+    "r_and_d_focus": {
+        "label": "R&D focus",
+        "group": "income",
+        "source": "fundamentals",
+        "spec": _fund("Commitment to R&D, innovation, and future growth."),
+    },
+    "debt_management": {
+        "label": "Debt management",
+        "group": "income",
+        "source": "fundamentals",
+        "spec": _fund("Interest expense, debt scale, and leverage approach."),
+    },
+    "profit_retention": {
+        "label": "Profit retention",
+        "group": "income",
+        "source": "fundamentals",
+        "spec": _fund("Net income and retention after expenses."),
+    },
+    "liquidity_position": {
+        "label": "Liquidity",
+        "group": "balance",
+        "source": "fundamentals",
+        "spec": _fund("Ability to meet short-term obligations with short-term assets."),
+    },
+    "assets_efficiency": {
+        "label": "Asset efficiency",
+        "group": "balance",
+        "source": "fundamentals",
+        "spec": _fund("How efficiently assets generate sales."),
+    },
+    "capital_structure": {
+        "label": "Capital structure",
+        "group": "balance",
+        "source": "fundamentals",
+        "spec": _fund("Leverage and liabilities vs equity."),
+    },
+    "inventory_management": {
+        "label": "Inventory",
+        "group": "balance",
+        "source": "fundamentals",
+        "spec": _fund("Efficiency in managing and turning inventory."),
+    },
+    "overall_solvency": {
+        "label": "Solvency",
+        "group": "balance",
+        "source": "fundamentals",
+        "spec": _fund("Ability to meet long-term debt and obligations."),
+    },
+    "operational_cash_efficiency": {
+        "label": "Operating cash",
+        "group": "cash",
+        "source": "fundamentals",
+        "spec": _fund("Cash generated from core operations."),
+    },
+    "investment_capability": {
+        "label": "Investments",
+        "group": "cash",
+        "source": "fundamentals",
+        "spec": _fund("Ability to invest using operational cash flows."),
+    },
+    "financial_flexibility": {
+        "label": "Financing cash",
+        "group": "cash",
+        "source": "fundamentals",
+        "spec": _fund("Cash after operations and investments for dividends or buybacks."),
+    },
+    "dividend_sustainability": {
+        "label": "Dividends",
+        "group": "cash",
+        "source": "fundamentals",
+        "spec": _fund("Ability to cover dividends with net earnings."),
+    },
+    "debt_service_capability": {
+        "label": "Debt service",
+        "group": "cash",
+        "source": "fundamentals",
+        "spec": _fund("Ability to service debt from operating cash flows."),
+    },
+    "performance_highlights": {
+        "label": "Performance highlights",
+        "group": "fiscal_year",
+        "source": "filing",
+        "spec": "Key performance and financial stats over the fiscal year.",
+        "retrieval_query": "fiscal year financial performance revenue earnings key metrics",
+    },
+    "major_events": {
+        "label": "Major events",
+        "group": "fiscal_year",
+        "source": "filing",
+        "spec": "Significant events, acquisitions, or strategic shifts during the year.",
+        "retrieval_query": "acquisitions mergers divestitures major corporate events fiscal year",
+    },
+    "challenges_encountered": {
+        "label": "Challenges encountered",
+        "group": "fiscal_year",
+        "source": "filing",
+        "spec": "Challenges faced and how management addressed them.",
+        "retrieval_query": "challenges risks difficulties management response fiscal year",
+    },
+    "strategic_initiatives": {
+        "label": "Strategic initiatives",
+        "group": "strategy",
+        "source": "filing",
+        "spec": "Primary objectives and growth strategies for upcoming years.",
+        "retrieval_query": "strategy growth initiatives long-term objectives business direction",
+    },
+    "market_outlook": {
+        "label": "Market outlook",
+        "group": "strategy",
+        "source": "filing",
+        "spec": "Market, competition, and industry trends anticipated.",
+        "retrieval_query": "market outlook competition industry trends demand",
+    },
+    "product_roadmap": {
+        "label": "Product roadmap",
+        "group": "strategy",
+        "source": "filing",
+        "spec": "Upcoming launches, expansions, or innovations.",
+        "retrieval_query": "product roadmap new products launches innovation pipeline",
+    },
+    "risk_factors": {
+        "label": "Risk factors",
+        "group": "risk",
+        "source": "filing",
+        "spec": "Primary risks the company acknowledges.",
+        "retrieval_query": "risk factors material risks uncertainties",
+    },
+    "risk_mitigation": {
+        "label": "Risk mitigation",
+        "group": "risk",
+        "source": "filing",
+        "spec": "Strategies for managing acknowledged risks.",
+        "retrieval_query": "risk management mitigation controls hedging",
+    },
+    "r_and_d_activities": {
+        "label": "R&D activities",
+        "group": "innovation",
+        "source": "filing",
+        "spec": "R&D focus, achievements, or breakthroughs.",
+        "retrieval_query": "research and development R&D spending programs",
+    },
+    "innovation_focus": {
+        "label": "Innovation focus",
+        "group": "innovation",
+        "source": "filing",
+        "spec": "New technologies, patents, or research areas.",
+        "retrieval_query": "innovation patents technology intellectual property",
+    },
 }
 
-inc_stat_attributes = [
-    "revenue_health",
-    "operational_efficiency",
-    "r_and_d_focus",
-    "debt_management",
-    "profit_retention",
-]
-
-bal_sheet = {
-    "liquidity_position": f"Must be more than {min_length} words. Insight into the company's ability to meet its short-term obligations using its short-term assets.",
-    "assets_efficiency": f"Must be more than {min_length} words. Analysis of how efficiently the company is using its assets to generate sales.",
-    "capital_structure": f"Must be more than {min_length} words. Insight into the company's financial leverage and its reliance on external liabilities versus internal equity.",
-    "inventory_management": f"Must be more than {min_length} words. Analysis of the company's efficiency in managing, selling, and replacing its inventory.",
-    "overall_solvency": f"Must be more than {min_length} words. Insight into the company's overall ability to meet its long-term debts and obligations.",
+GROUPS = {
+    "income": [k for k, t in THEMES.items() if t["group"] == "income"],
+    "balance": [k for k, t in THEMES.items() if t["group"] == "balance"],
+    "cash": [k for k, t in THEMES.items() if t["group"] == "cash"],
+    "fiscal_year": [k for k, t in THEMES.items() if t["group"] == "fiscal_year"],
+    "strategy": [k for k, t in THEMES.items() if t["group"] == "strategy"],
+    "risk": [k for k, t in THEMES.items() if t["group"] == "risk"],
+    "innovation": [k for k, t in THEMES.items() if t["group"] == "innovation"],
 }
 
-balance_sheet_attributes = [
-    "liquidity_position",
-    "assets_efficiency",
-    "capital_structure",
-    "inventory_management",
-    "overall_solvency",
-]
+FUNDAMENTALS_GROUPS = ("income", "balance", "cash")
+FILING_GROUPS = ("fiscal_year", "strategy", "risk", "innovation")
 
-cashflow = {
-    "operational_cash_efficiency": f"Must be more than {min_length} words. Insight into how efficiently the company is generating cash from its core operations.",
-    "investment_capability": f"Must be more than {min_length} words. Indicates the company's ability to invest in its business using its operational cash flows.",
-    "financial_flexibility": f"Must be more than {min_length} words. Demonstrates the cash left after all operational expenses and investments, which can be used for dividends, share buybacks, or further investments.",
-    "dividend_sustainability": f"Must be more than {min_length} words. Indicates the company's ability to cover its dividend payouts with its net earnings.",
-    "debt_service_capability": f"Must be more than {min_length} words. Analysis of the company's ability to service its debt using the operational cash flows.",
-}
+ALL_FILING_KEYS = [k for k, t in THEMES.items() if t["source"] == "filing"]
+ALL_FUNDAMENTALS_KEYS = [k for k, t in THEMES.items() if t["source"] == "fundamentals"]
 
-cashflow_attributes = [
-    "operational_cash_efficiency",
-    "investment_capability",
-    "financial_flexibility",
-    "dividend_sustainability",
-    "debt_service_capability",
-]
-
-fiscal_year = {
-    "performance_highlights": "Key performance and financial stats over the fiscal year.",
-    "major_events": "Highlight of significant events, acquisitions, or strategic shifts that occurred during the year.",
-    "challenges_encountered": "Challenges the company faced during the year and, if and how they managed or overcame them.",
-}
-
-fiscal_year_attributes = ["performance_highlights", "major_events", "challenges_encountered"]
-
-strat_outlook = {
-    "strategic_initiatives": "The company's primary objectives and growth strategies for the upcoming years.",
-    "market_outlook": "Insights into the broader market, competitive landscape, and industry trends the company anticipates.",
-    "product_roadmap": "Upcoming launches, expansions, or innovations the company plans to roll out.",
-}
-
-strat_outlook_attributes = ["strategic_initiatives", "market_outlook", "product_roadmap"]
-
-risk_management = {
-    "risk_factors": "Primary risks the company acknowledges.",
-    "risk_mitigation": "Strategies for managing these risks.",
-}
-
-risk_management_attributes = ["risk_factors", "risk_mitigation"]
-
-innovation = {
-    "r_and_d_activities": "Overview of the company's focus on research and development, major achievements, or breakthroughs.",
-    "innovation_focus": "Mention of new technologies, patents, or areas of research the company is diving into.",
-}
-
-innovation_attributes = ["r_and_d_activities", "innovation_focus"]
+def default_theme_flags():
+    return {k: True for k in THEMES}

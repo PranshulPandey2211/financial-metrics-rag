@@ -1,33 +1,16 @@
-# FinAnalytica — direct runtime dependencies (Python 3.10–3.11 recommended).
-# First install can be large (PyTorch + PDF parsing libs for the annual-report tab).
+# Python 3.10–3.11 tested
 
-# UI
-streamlit==1.27.2
-
-# Data & charts
+flask>=3.0.0
 pandas==2.1.0
 numpy==1.25.2
-plotly==5.17.0
 yfinance>=0.2.40
 
-# Financial-metrics insights (LangChain + OpenAI API)
 langchain==0.0.310
 openai==0.28.0
 tiktoken==0.5.1
 
-# Annual report RAG
 llama-index==0.8.48
 faiss-cpu==1.7.4
 pypdf==3.15.5
 
-# News sentiment (downloads VADER lexicon at runtime if missing)
 nltk==3.8.1
-
-# PDF layout parsing (UnstructuredElementNodeParser in annual report flow)
-unstructured==0.10.25
-unstructured-inference==0.7.9
-unstructured.pytesseract==0.3.12
-
-# Used by unstructured stack / layout models (pins avoid surprise upgrades)
-torch==2.1.0
-torchvision==0.16.0

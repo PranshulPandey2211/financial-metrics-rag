@@ -113,17 +113,6 @@ def load_report(key):
     return out
 
 
-def apply_insights_to_session(bundle):
-    import streamlit as st
-
-    for block in ("income_statement", "balance_sheet", "cash_flow"):
-        data = bundle.get(block)
-        if not data or not isinstance(data, dict):
-            continue
-        for k, v in data.get("insights", {}).items():
-            st.session_state[k] = v
-
-
 _AR_ROOT = _ROOT / "cache" / "annual_reports"
 
 

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}{{ company.get('Name', out.resolved_ticker) }}{% endblock %}
+{% block content %}
+<h1>{{ company.get('Name', out.resolved_ticker) }} ({{ out.resolved_ticker }})</h1>
+{% if out.ticker_note %}<p>{{ out.ticker_note }}</p>{% endif %}
+{% if out.steps %}<p><small>{{ out.steps | join(' · ') }}</small></p>{% endif %}
+
+<h2>Overview</h2>
+<p>
+  {{ company.get('Sector', '—') }} · {{ company.get('Industry', '—') }} ·
+  Market cap {{ format_currency(company.get('MarketCapitalization')) }}
+</p>
+{% set q = out.quote or {} %}
+{% if q %}
+<dl class="metric-grid">
+  {% if q.price is not none %}<div><dt>Price</dt><dd>${{ round_numeric(q.price, 2) }}</dd></div>{% endif %}
+  {% if q.trailing_pe is not none %}<div><dt>Trailing P/E</dt><dd>{{ round_numeric(q.trailing_pe, 1) }}</dd></div>{% endif %}
+  {% if q.forward_pe is not none %}<div><dt>Forward P/E</dt><dd>{{ round_numeric(q.forward_pe, 1) }}</dd></div>{% endif %}
+  {% if q.price_to_book is not none %}<div><dt>P/B</dt><dd>{{ round_numeric(q.price_to_book, 2) }}</dd></div>{% endif %}
+  {% if q.ev_to_ebitda is not none %}<div><dt>EV/EBITDA</dt><dd>{{ round_numeric(q.ev_to_ebitda, 1) }}</dd></div>{% endif %}
+  {% if q.beta is not none %}<div><dt>Beta</dt><dd>{{ round_numeric(q.beta, 2) }}</dd></div>{% endif %}
+  {% if q.dividend_yield is not none %}<div><dt>Div yield</dt><dd>{{ format_ratio_as_pct(q.dividend_yield) }}</dd></div>{% endif %}
+  {% if q.fifty_two_week_low is not none and q.fifty_two_week_high is not none %}
+    <div><dt>52-week range</dt><dd>${{ round_numeric(q.fifty_two_week_low, 2) }} – ${{ round_numeric(q.fifty_two_week_high, 2) }}</dd></div>
+  {% endif %}
+</dl>
+{% endif %}
+{% if company.get('Description') %}
+  <details><summary>Description</summary><p>{{ company.Description }}</p></details>
+{% endif %}
+
+{% set inc = out.income or {} %}
+{% set bal = out.balance or {} %}
+{% set cf = out.cash or {} %}
+{% if inc.metrics or bal.metrics or cf.metrics %}
+<h2>Key metrics (latest annual)</h2>
+{% if inc.metrics and not inc.get('Error') %}
+<h3>Income</h3>
+<dl class="metric-grid">
+  <div><dt>Gross margin</dt><dd>{{ format_ratio_as_pct(inc.metrics.gross_profit_margin) }}</dd></div>
+  <div><dt>Operating margin</dt><dd>{{ format_ratio_as_pct(inc.metrics.operating_profit_margin) }}</dd></div>
+  <div><dt>Net margin</dt><dd>{{ format_ratio_as_pct(inc.metrics.net_profit_margin) }}</dd></div>
+  <div><dt>Interest coverage</dt><dd>{{ round_numeric(inc.metrics.interest_coverage_ratio, 2) }}</dd></div>
+</dl>
+{% endif %}
+{% if bal.metrics and not bal.get('Error') %}
+<h3>Balance sheet</h3>
+<dl class="metric-grid">
+  <div><dt>Current ratio</dt><dd>{{ round_numeric(bal.metrics.current_ratio, 2) }}</dd></div>
+  <div><dt>Quick ratio</dt><dd>{{ round_numeric(bal.metrics.quick_ratio, 2) }}</dd></div>
+  <div><dt>Debt / equity</dt><dd>{{ round_numeric(bal.metrics.debt_to_equity_ratio, 2) }}</dd></div>
+  <div><dt>Asset turnover</dt><dd>{{ round_numeric(bal.metrics.asset_turnover, 2) }}</dd></div>
+</dl>
+{% endif %}
+{% if cf.metrics and not cf.get('Error') %}
+<h3>Cash flow</h3>
+<dl class="metric-grid">
+  <div><dt>OCF margin</dt><dd>{{ format_ratio_as_pct(cf.metrics.operating_cash_flow_margin) }}</dd></div>
+  <div><dt>Free cash flow</dt><dd>{{ format_currency(cf.metrics.free_cash_flow) }}</dd></div>
+  <div><dt>CapEx coverage</dt><dd>{{ round_numeric(cf.metrics.capital_expenditure_coverage_ratio, 2) }}</dd></div>
+  <div><dt>CF / debt</dt><dd>{{ round_numeric(cf.metrics.cash_flow_to_debt_ratio, 2) }}</dd></div>
+</dl>
+{% endif %}
+{% endif %}
+
+{% if news_rows %}
+<h2>News</h2>
+<p>Mean headline sentiment: <strong>{{ news_sentiment_label or '—' }}</strong>
+  {% if news_sentiment_score is not none %}({{ round_numeric(news_sentiment_score, 3) }}){% endif %}
+</p>
+<table class="data-table">
+  <thead><tr><th>Headline</th><th>Source</th><th>Sentiment</th></tr></thead>
+  <tbody>
+    {% for row in news_rows %}
+    <tr>
+      <td>{% if row.url %}<a href="{{ row.url }}" target="_blank" rel="noopener">{{ row.title }}</a>{% else %}{{ row.title }}{% endif %}</td>
+      <td>{{ row.source or row.publisher or '—' }}</td>
+      <td>{{ row.sentiment_label or '—' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<h2>Commentary (fundamentals)</h2>
+{% for group in fundamentals_groups %}
+  {% for key in groups[group] %}
+    {% set text = out.fundamentals_insights.get(key) %}
+    {% if text %}
+      <section class="insight-card">
+        <h3>{{ themes[key]["label"] }}</h3>
+        <p>{{ text }}</p>
+      </section>
+    {% endif %}
+  {% endfor %}
+{% endfor %}
+
+{% if out.filing_insights %}
+  <h2>Commentary (annual report)</h2>
+  {% for group in filing_groups %}
+    {% for key in groups[group] %}
+      {% set text = out.filing_insights.get(key) %}
+      {% if text %}
+        <section class="insight-card">
+          <h3>{{ themes[key]["label"] }}</h3>
+          <p>{{ text }}</p>
+          {% set sources = out.filing_sources.get(key, []) %}
+          {% if sources %}
+            <details>
+              <summary>Retrieved passages</summary>
+              <ul>
+                {% for chunk in sources %}
+                  <li><pre>{{ chunk["text"][:600] }}{% if chunk["text"]|length > 600 %}…{% endif %}</pre></li>
+                {% endfor %}
+              </ul>
+            </details>
+          {% endif %}
+        </section>
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+{% endif %}
+
+<p><a href="{{ url_for('index') }}">New run</a></p>
+{% endblock %}

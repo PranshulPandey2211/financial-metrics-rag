@@ -331,6 +331,34 @@ def fetch_news(symbol, max_feed=10):
     }
 
 
+def fetch_quote_stats(symbol):
+    try:
+        info = _yf_ticker(symbol).info or {}
+    except Exception:
+        return {}
+    if not info:
+        return {}
+
+    def pick(*keys):
+        for k in keys:
+            v = info.get(k)
+            if v is not None:
+                return v
+        return None
+
+    return {
+        "price": pick("currentPrice", "regularMarketPrice"),
+        "trailing_pe": pick("trailingPE"),
+        "forward_pe": pick("forwardPE"),
+        "price_to_book": pick("priceToBook"),
+        "ev_to_ebitda": pick("enterpriseToEbitda"),
+        "beta": pick("beta"),
+        "dividend_yield": pick("dividendYield"),
+        "fifty_two_week_low": pick("fiftyTwoWeekLow"),
+        "fifty_two_week_high": pick("fiftyTwoWeekHigh"),
+    }
+
+
 def latest_total_revenue(symbol):
     data = fetch_income_statement(symbol)
     if data.get("Error"):

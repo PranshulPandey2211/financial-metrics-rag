@@ -1,96 +1,75 @@
 # FinAnalytica
 
-**FinAnalytica** is an **AI-powered financial analysis** app built with [Streamlit](https://streamlit.io/). It pulls fundamentals from Yahoo Finance, adds LLM commentary on the themes you choose, and can analyze an annual report PDF with RAG (LlamaIndex).
+Flask app that pulls a US ticker from Yahoo, shows the ratios and news you'd skim before a call, and—if you upload a 10-K—runs a small RAG pass so commentary isn't disconnected from what management wrote.
 
-The UI is a single page with a top **section** switch (**Financial Metrics** vs **Annual Report Analyzer**). Main controls and results stay in the main column (the default Streamlit sidebar is hidden via CSS).
+The point isn't "ask ChatGPT about a stock." It's: **numbers from Yahoo, narrative from the filing, and you can open the retrieved chunks** to see if the model is making things up.
 
-## Features
+## What runs when you hit Run
 
-### Financial Metrics
+```mermaid
+sequenceDiagram
+  participant You as Browser
+  participant App as app.py
+  participant Run as run_analysis()
+  participant YF as yfinance
+  participant Cache as cache/reports
+  participant RAG as src/rag.py
+  participant LLM as OpenAI
 
-- Enter a US ticker (e.g. `AAPL`). Data comes from **Yahoo Finance** via [yfinance](https://github.com/ranaroussi/yfinance) (no market-data API key).
-- Tabs: **Overview**, **Income statement**, **Balance sheet**, **Cash flow**, **News**.
-- Toggle which **insight themes** you want; OpenAI generates commentary per theme using templates in `src/llm_prompts.py`.
-- News headlines include **VADER** sentiment labels on the text returned by Yahoo.
-- Successful runs can be **cached on disk** under `cache/reports/` so repeat requests with the same ticker and theme flags avoid refetching (unless you use **Force fresh fetch**).
-
-### Annual Report Analyzer
-
-- Upload a **PDF** (10-K or full annual report works best).
-- **Process document** builds a vector index; **Analyze report** runs themed questions through a LlamaIndex query setup.
-- Optional **Force fresh analysis** bypasses the saved snapshot in `cache/annual_reports/`.
-
-## Tech stack
-
-| Piece | Role |
-|--------|------|
-| Streamlit | Web UI |
-| yfinance | Fundamentals, profile, news |
-| LangChain + OpenAI | Chat model for financial-metrics commentary (`gpt-3.5-turbo` in code) |
-| LlamaIndex + FAISS | Annual report RAG |
-| NLTK VADER | Headline sentiment scores |
-
-## Requirements
-
-- **Python 3.10 or 3.11** (3.12 may work; this stack pins older LlamaIndex / LangChain.)
-- Install: `pip install -r requirements.txt` — first run can download **PyTorch** and PDF-parsing dependencies (large).
-- **OpenAI**: copy `.streamlit/secrets.toml.example` to `.streamlit/secrets.toml` and set `openai_api_key`, or set `OPENAI_API_KEY`.
-
-If a package fails to build on your OS, create a fresh venv and retry; the annual-report tab needs the `unstructured` / `torch` lines above.
-
-## Project layout
-
-```
-app.py                 # Entrypoint: section radio + runs the selected module
-src/
-  llm_prompts.py            # LLM system / task strings (financial + annual report)
-  financial_metrics.py       # Yahoo metrics UI and orchestration
-  annual_report_analyzer.py  # PDF RAG UI and flow
-  yahoo_finance.py           # Yahoo fetch + normalization
-  income_statement.py        # Income metrics + insights
-  balance_sheet.py
-  cash_flow.py
-  company_profile.py
-  company_news.py
-  insight_themes.py          # Theme keys and prompt snippets
-  helpers.py                 # OpenAI key, charts, shared helpers
-  app_theme.py               # CSS + small UI helpers
-  analysis_cache.py          # Disk cache for both flows
-.streamlit/
-  config.toml              # Theme / server options (safe to commit)
-  secrets.toml.example     # Copy to secrets.toml locally
-  secrets.toml             # Your API key (create locally — gitignored)
+  You->>App: ticker, themes, optional PDF
+  App->>Run: theme flags + API key
+  Run->>YF: profile, statements, news
+  Run->>Cache: load or save Yahoo bundle
+  Run->>LLM: one JSON call (fundamentals themes)
+  alt PDF attached
+    Run->>RAG: chunk PDF, FAISS index
+    RAG->>RAG: retrieve per theme
+    Run->>LLM: one JSON call (filing + evidence)
+  end
+  Run-->>App: result dict
+  App-->>You: report page
 ```
 
-## Local setup
+## Report page
 
-1. Open this project directory in your terminal.
+- Valuation snapshot (P/E, P/B, 52-week range, etc.)
+- Latest annual ratios (income, balance sheet, cash flow)
+- News table + VADER sentiment on headlines
+- Optional commentary (theme checkboxes)
+- With a PDF: filing commentary + **retrieved passages** per theme
 
-2. **Python 3.10+** recommended. Create and activate a virtual environment:
+## Setup
 
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate   # Windows: .venv\Scripts\activate
-   ```
+Python **3.10–3.11** fits the pinned LlamaIndex / LangChain versions.
 
-3. **Install dependencies**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+export OPENAI_API_KEY=sk-...
+python app.py
+```
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+Open **http://127.0.0.1:5000** (or set `PORT`).
 
-4. **OpenAI API key** — get a key from [OpenAI](https://platform.openai.com/api-keys).
+Optional env: `FLASK_SECRET_KEY`.
 
-   ```bash
-   cp .streamlit/secrets.toml.example .streamlit/secrets.toml
-   ```
+## Stack
 
-   Edit `.streamlit/secrets.toml` and set `openai_api_key`, or set the environment variable `OPENAI_API_KEY`.
+Flask · [yfinance](https://github.com/ranaroussi/yfinance) · LangChain (prompt + `gpt-3.5-turbo`) · LlamaIndex · FAISS · pypdf · NLTK VADER
 
-5. **Run the app** from the repository root:
+## Quick checks
 
-   ```bash
-   python -m streamlit run app.py
-   ```
+1. `AAPL` without PDF — metrics and news load; commentary needs `OPENAI_API_KEY`.
+2. `AAPL` + a 10-K PDF — expand retrieved passages under a risk theme; they should match the bullet text.
+3. `APPL` — should resolve or warn toward `AAPL`.
 
-   Open the URL Streamlit prints (usually `http://localhost:8501`).
+## Limits
+
+- US symbols Yahoo supports; you supply the PDF (no EDGAR download in-app).
+- Bad PDF text → weak retrieval. Empty or partial JSON from the model → missing theme blocks.
+- Not investment advice.
+
+## Possible next steps (not in repo)
+
+EDGAR by CIK, local embeddings, a tiny 3-ticker eval sheet.

@@ -1,101 +1,55 @@
-
-import sys
-from pathlib import Path
-script_dir = Path(__file__).resolve().parent
-project_root = script_dir.parent
-sys.path.append(str(project_root))
-
-from src.helpers import generate_insight, get_total_revenue, get_total_debt, safe_float, statement_error_response
-from src.insight_themes import cashflow, cashflow_attributes
-from src.yahoo_finance import fetch_cash_flow
+from src.helpers import safe_float, statement_error_response
+from src.yahoo_finance import fetch_cash_flow, latest_total_debt, latest_total_revenue
 
 
-def charts(data):
-    dates = []
-    operating_cash_flow = []
-    cash_flow_from_investment = []
-    cash_flow_from_financing = []
-
+def _chart_data(data):
+    dates, ocf, inv, fin = [], [], [], []
     for report in reversed(data["annualReports"]):
         dates.append(report["fiscalDateEnding"])
-        operating_cash_flow.append(report["operatingCashflow"])
-        cash_flow_from_investment.append(report["cashflowFromInvestment"])
-        cash_flow_from_financing.append(report["cashflowFromFinancing"])
-
+        ocf.append(report["operatingCashflow"])
+        inv.append(report["cashflowFromInvestment"])
+        fin.append(report["cashflowFromFinancing"])
     return {
         "dates": dates,
-        "operating_cash_flow": operating_cash_flow,
-        "cash_flow_from_investment": cash_flow_from_investment,
-        "cash_flow_from_financing": cash_flow_from_financing
+        "operating_cash_flow": ocf,
+        "cash_flow_from_investment": inv,
+        "cash_flow_from_financing": fin,
     }
-    
 
-def metrics(data, total_revenue, total_debt):
-    operatingCashFlow = safe_float(data.get("operatingCashflow"))
-    capitalExpenditures = safe_float(data.get("capitalExpenditures"))
-    dividendPayout = safe_float(data.get("dividendPayout"))
-    netIncome = safe_float(data.get("netIncome"))
 
-    operating_cash_flow_margin = "N/A" if "N/A" in (operatingCashFlow, total_revenue) else operatingCashFlow / total_revenue
-    capital_expenditure_coverage_ratio = "N/A" if "N/A" in (operatingCashFlow, capitalExpenditures) else operatingCashFlow / capitalExpenditures
-    free_cash_flow = "N/A" if "N/A" in (operatingCashFlow, capitalExpenditures) else operatingCashFlow - capitalExpenditures
-    dividend_coverage_ratio = "N/A" if "N/A" in (dividendPayout, netIncome) else netIncome / dividendPayout
-    cash_flow_to_debt_ratio = "N/A" if "N/A" in (operatingCashFlow, total_debt) else operatingCashFlow / total_debt
+def _metrics(report, total_revenue, total_debt):
+    ocf = safe_float(report.get("operatingCashflow"))
+    capex = safe_float(report.get("capitalExpenditures"))
+    div = safe_float(report.get("dividendPayout"))
+    net = safe_float(report.get("netIncome"))
+
+    def ratio(num, den):
+        if "N/A" in (num, den):
+            return "N/A"
+        return num / den
+
+    fcf = "N/A" if "N/A" in (ocf, capex) else ocf - capex
 
     return {
-        "operating_cash_flow_margin": operating_cash_flow_margin,
-        "capital_expenditure_coverage_ratio": capital_expenditure_coverage_ratio,
-        "free_cash_flow": free_cash_flow,
-        "dividend_coverage_ratio": dividend_coverage_ratio,
-        "cash_flow_to_debt_ratio": cash_flow_to_debt_ratio
+        "operating_cash_flow_margin": ratio(ocf, total_revenue),
+        "capital_expenditure_coverage_ratio": ratio(ocf, capex),
+        "free_cash_flow": fcf,
+        "dividend_coverage_ratio": ratio(net, div),
+        "cash_flow_to_debt_ratio": ratio(ocf, total_debt),
     }
 
 
-def cash_flow(symbol, fields_to_include, api_key, total_revenue=None, total_debt=None):
+def cash_flow(symbol, total_revenue=None, total_debt=None):
     data = fetch_cash_flow(symbol)
     if data.get("Error"):
         return data
-    if "annualReports" not in data or not data["annualReports"]:
-        return statement_error_response(
-            "No cash flow annual reports for this symbol."
-        )
+    if not data.get("annualReports"):
+        return statement_error_response("No cash flow statement for this symbol.")
 
-    chart_data = charts(data)
-
+    chart_data = _chart_data(data)
     report = data["annualReports"][0]
     if total_revenue is None:
-        total_revenue = get_total_revenue(symbol)
+        total_revenue = latest_total_revenue(symbol)
     if total_debt is None:
-        total_debt = get_total_debt(symbol)
-    met = metrics(report, total_revenue, total_debt)
-
-    data_for_insights = {
-        "annual_report_data": report,
-        "historical_data": chart_data,
-    }
-    ins = {}
-    for i, field in enumerate(cashflow_attributes):
-        if fields_to_include[i]:
-            ins[field] = generate_insight(
-                field,
-                "cash flow",
-                data_for_insights,
-                str({field: cashflow[field]}),
-                api_key,
-            )
-
-
-    return {
-        "metrics": met,
-        "chart_data": chart_data,
-        "insights": ins
-    }
-
-if __name__ == "__main__":
-    from src.helpers import get_openai_api_key
-
-    fields = [True, True, False, False, False]
-    data = cash_flow("AAPL", fields, get_openai_api_key())
-    print("Metrics: ", data['metrics'])
-    print("Chart Data: ", data['chart_data'])
-    print("Insights", data['insights'])
+        total_debt = latest_total_debt(symbol)
+    return {"metrics": _metrics(report, total_revenue, total_debt), "chart_data": chart_data}
